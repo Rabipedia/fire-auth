@@ -12,7 +12,10 @@ function App() {
     isSignedIn: false,
     name: "",
     email: "",
+    password: "",
     photo: "",
+    error: "",
+    success: false
   });
   const provider = new firebase.auth.GoogleAuthProvider();
   const handleSignIn = () => {
@@ -53,20 +56,42 @@ function App() {
       });
   }
   const handleBlur = (e) => {
+    let isFieldValid = true;
     if(e.target.name === 'email'){
-      const isEmailValid = /\S+@\S+\.\S+/.test(e.target.value);
-      console.log(isEmailValid);
+      isFieldValid = /\S+@\S+\.\S+/.test(e.target.value);
     }
     if(e.target.name === 'password'){
       const isPasswordValid = e.target.value.length > 6;
       const passwordHasNumber = /\d{1}/.test(e.target.value);
-      console.log(isPasswordValid && passwordHasNumber);
-      
+      isFieldValid = isPasswordValid && passwordHasNumber; 
+    }
+    if(isFieldValid){ 
+      const newUserInfo = {...user};
+      newUserInfo[e.target.name] = e.target.value;
+      setUser(newUserInfo);
     }
   }
-  const handleSubmit = () => {
-
-  }
+  const handleSubmit = (e) => {
+    if(user.email && user.password){
+      firebase.auth().createUserWithEmailAndPassword(user.email, user.password)
+  .then(res => {
+    // Signed in 
+    const newUserInfo = {...user};
+    newUserInfo.error = '';
+    newUserInfo.success = true;
+    setUser(newUserInfo);
+    // ...
+  })
+  .catch(error => {
+    const newUserInfo = {...user};
+    newUserInfo.error = error.message;
+    newUserInfo.success = false;
+    setUser(newUserInfo);
+    // ..
+  });
+    }
+    e.preventDefault();
+  };
   return (
     <div>
       {user.isSignedIn ? (
@@ -83,6 +108,8 @@ function App() {
         </div>
       )}
       <form onSubmit={handleSubmit}>
+        <input typr="text" onBlur={handleBlur} name="name" placeholder="Enter Your Name" required></input>
+        <br/>
         <input type="text" onBlur={handleBlur} name="email" placeholder="Enter Your Email" required></input>
         <br/>
         <input
@@ -95,6 +122,8 @@ function App() {
         <br/>
         <input type="submit" value="Submit"/>
       </form>
+      <p>{user.error}</p>
+      {user.success && <p style={{color:'green'}}>User account created successfully</p>}
     </div>
   );
 }
